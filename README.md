@@ -20,8 +20,11 @@ MacKbdSwitcher is a small menu bar app (the app itself is named **MacKbdGlobe**)
 - Cycles through the layouts enabled in System Settings, in their listed order.
 - Leaves 🌐 shortcuts alone. Fn+Delete, Fn+arrows, 🌐+E, combinations with ⌘ ⌥ ⌃ ⇧, and presses longer than 0.5 s do not switch.
 - Shows the current layout in the menu bar (EN, RU, PL…). Click it to pick a layout directly.
+- Typing statistics in the menu: characters typed per language today and all time, with totals.
 - Optional Open at Login.
-- No network access, no data collection, no third-party code.
+- No network access, no third-party code.
+
+Privacy: the statistics are counts per language, stored only on your Mac. The app never records which keys you press or what you type, and it does not count in password fields. Reset them any time from the menu.
 
 How it works: the system's own 🌐 action is set to "Do Nothing", so macOS shows no popup. The app reads the 🌐 key directly from the keyboard through IOKit HID and switches the layout with the Text Input Sources API.
 
@@ -32,7 +35,7 @@ How it works: the system's own 🌐 action is set to "Do Nothing", so macOS show
 
 ## Installation
 
-1. Download `MacKbdGlobe-0.1.0.dmg` from [Releases](https://github.com/FrankieMa77/MacKbdSwitcher/releases/latest).
+1. Download the latest `MacKbdGlobe-<version>.dmg` from [Releases](https://github.com/FrankieMa77/MacKbdSwitcher/releases/latest).
 2. Open the dmg and drag **MacKbdGlobe** to **Applications**.
 3. Open MacKbdGlobe from Applications. The app is not notarized by Apple, so macOS blocks the first launch: go to **System Settings → Privacy & Security** and click **Open Anyway** next to MacKbdGlobe.
 4. Allow keyboard access: **System Settings → Privacy & Security → Input Monitoring** → turn on **MacKbdGlobe**. Choose **Quit & Reopen** if macOS asks.
@@ -49,7 +52,7 @@ Requires the Xcode command line tools.
 ./build.sh
 ```
 
-This produces `build/MacKbdGlobe.app` and `dist/MacKbdGlobe-0.1.0.dmg`. The app is signed with `SIGN_IDENTITY` if set, otherwise with a self-signed "MacKbdSwitcher" certificate, otherwise ad-hoc. Run `tools/make-cert.sh` once to create that certificate in your login keychain; a stable signature lets macOS keep the Input Monitoring permission across rebuilds.
+This produces `build/MacKbdGlobe.app` and `dist/MacKbdGlobe-<version>.dmg`. The app is signed with `SIGN_IDENTITY` if set, otherwise with a self-signed "MacKbdSwitcher" certificate, otherwise ad-hoc. Run `tools/make-cert.sh` once to create that certificate in your login keychain; a stable signature lets macOS keep the Input Monitoring permission across rebuilds.
 
 ## Uninstall
 

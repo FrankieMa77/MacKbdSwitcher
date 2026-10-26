@@ -1,4 +1,5 @@
 import AppKit
+import Carbon
 import IOKit.hid
 
 enum GlobeState: Equatable {
@@ -27,6 +28,7 @@ private let deviceCallback: IOHIDDeviceCallback = { context, _, _, _ in
 final class GlobeMonitor {
     private(set) var state: GlobeState = .starting
     var onChange: (() -> Void)?
+    var onKeystroke: (() -> Void)?
 
     private let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
     private var retryTimer: Timer?
@@ -100,11 +102,27 @@ final class GlobeMonitor {
         return !flags.intersection([.maskCommand, .maskAlternate, .maskControl, .maskShift]).isEmpty
     }
 
+    private func isCountable(_ usage: Int) -> Bool {
+        switch usage {
+        case 0x04...0x27, 0x2C, 0x2D...0x38, 0x64, 0x54...0x57, 0x59...0x63:
+            return true
+        default:
+            return false
+        }
+    }
+
     fileprivate func handle(_ value: IOHIDValue) {
         let element = IOHIDValueGetElement(value)
         let page = Int(IOHIDElementGetUsagePage(element))
         let usage = Int(IOHIDElementGetUsage(element))
         let pressed = IOHIDValueGetIntegerValue(value) != 0
+
+        if page == 0x07 && pressed && isCountable(usage) && !fnDown && !IsSecureEventInputEnabled() {
+            let flags = CGEventSource.flagsState(.combinedSessionState)
+            if !flags.contains(.maskCommand) && !flags.contains(.maskControl) {
+                onKeystroke?()
+            }
+        }
 
         if page == fnPage && usage == fnUsage {
             if pressed {

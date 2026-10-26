@@ -4,10 +4,12 @@ import ServiceManagement
 
 final class StatusMenu: NSObject, NSMenuDelegate {
     private let monitor: GlobeMonitor
+    private let stats: KeyStats
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
-    init(monitor: GlobeMonitor) {
+    init(monitor: GlobeMonitor, stats: KeyStats) {
         self.monitor = monitor
+        self.stats = stats
         super.init()
     }
 
@@ -50,6 +52,11 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         }
         menu.addItem(.separator())
 
+        menu.addItem(statsItem(prefix: "Today", counts: stats.todayCounts))
+        menu.addItem(statsItem(prefix: "All time", counts: stats.allTimeCounts))
+        menu.addItem(actionItem("Reset Statistics…", #selector(resetStats)))
+        menu.addItem(.separator())
+
         if let status = statusItem() {
             menu.addItem(status)
             menu.addItem(.separator())
@@ -64,6 +71,39 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         let quit = NSMenuItem(title: "Quit MacKbdGlobe", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
+    }
+
+    private func statsItem(prefix: String, counts: [String: Int]) -> NSMenuItem {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        func format(_ number: Int) -> String {
+            formatter.string(from: NSNumber(value: number)) ?? String(number)
+        }
+        let total = counts.values.reduce(0, +)
+        var text = "\(prefix): no typing yet"
+        if total > 0 {
+            let parts = counts
+                .sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
+                .map { "\($0.key) \(format($0.value))" }
+            text = "\(prefix): " + (parts + ["Total \(format(total))"]).joined(separator: " · ")
+        }
+        let entry = NSMenuItem()
+        let font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.menuFont(ofSize: 0).pointSize, weight: .regular)
+        entry.attributedTitle = NSAttributedString(string: text, attributes: [.font: font])
+        entry.isEnabled = false
+        return entry
+    }
+
+    @objc private func resetStats() {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "Reset typing statistics?"
+        alert.informativeText = "Today and all-time counts will be set to zero."
+        alert.addButton(withTitle: "Reset")
+        alert.addButton(withTitle: "Cancel")
+        if alert.runModal() == .alertFirstButtonReturn {
+            stats.reset()
+        }
     }
 
     private func statusItem() -> NSMenuItem? {

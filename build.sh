@@ -3,7 +3,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 APP=build/MacKbdGlobe.app
-DMG=dist/MacKbdGlobe-0.1.0.dmg
+VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+DMG=dist/MacKbdGlobe-$VERSION.dmg
 
 if [ ! -f Resources/AppIcon.icns ]; then
     swift tools/make-icon.swift Resources/AppIcon.icns
