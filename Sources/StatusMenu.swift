@@ -68,6 +68,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         let statsEntry = NSMenuItem()
         statsEntry.view = StatsView(today: stats.todayCounts, allTime: stats.allTimeCounts)
         menu.addItem(statsEntry)
+        menu.addItem(bookItem())
         menu.addItem(actionItem("Reset Statistics…", #selector(resetStats), symbol: "arrow.counterclockwise"))
         menu.addItem(.separator())
 
@@ -84,9 +85,21 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(login)
 
         menu.addItem(.separator())
+        menu.addItem(aboutItem())
         let quit = actionItem("Quit MacKbdGlobe", #selector(quit), symbol: "xmark.rectangle")
         quit.keyEquivalent = "q"
         menu.addItem(quit)
+    }
+
+    private func bookItem() -> NSMenuItem {
+        let entry = NSMenuItem(title: "Book Progress", action: nil, keyEquivalent: "")
+        entry.image = NSImage(systemSymbolName: "books.vertical", accessibilityDescription: nil)
+        let panel = NSMenuItem()
+        panel.view = BookProgressView(total: stats.allTimeCounts.values.reduce(0, +))
+        let submenu = NSMenu()
+        submenu.addItem(panel)
+        entry.submenu = submenu
+        return entry
     }
 
     @objc private func toggleSound() {
@@ -172,6 +185,22 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         } catch {
             NSLog("Open at Login failed: %@", error.localizedDescription)
         }
+    }
+
+    private func aboutItem() -> NSMenuItem {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        let entry = actionItem("About MacKbdGlobe", #selector(about), symbol: "info.circle")
+        if #available(macOS 14.4, *) {
+            entry.subtitle = "Version \(version)"
+        } else {
+            entry.title = "About MacKbdGlobe \(version)"
+        }
+        return entry
+    }
+
+    @objc private func about() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(nil)
     }
 
     @objc private func quit() {

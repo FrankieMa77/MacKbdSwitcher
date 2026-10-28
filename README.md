@@ -23,6 +23,7 @@ MacKbdSwitcher is a small menu bar app (the app itself is named **MacKbdGlobe**)
 - Shows the current layout in the menu bar as a native-style badge (EN, RU, PL…). Click it to pick a layout directly.
 - A subtle click on every switch. Turn it off with **Click Sound** in the menu.
 - Typing statistics in the menu: characters typed per language today and all time, with totals.
+- Book Progress: your all-time characters as a share of 10 famous long books, from The Hobbit to War and Peace and the whole Harry Potter series, each with a progress bar.
 - Optional Open at Login.
 - No network access, no third-party code.
 
