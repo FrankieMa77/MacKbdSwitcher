@@ -29,6 +29,8 @@ final class GlobeMonitor {
     private(set) var state: GlobeState = .starting
     var onChange: (() -> Void)?
     var onKeystroke: (() -> Void)?
+    var onTap: (() -> Void)?
+    var onOtherKey: (() -> Void)?
 
     private let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
     private var retryTimer: Timer?
@@ -124,6 +126,10 @@ final class GlobeMonitor {
             }
         }
 
+        if page == 0x07 && pressed && (0x04...0xE7).contains(usage) {
+            onOtherKey?()
+        }
+
         if page == fnPage && usage == fnUsage {
             if pressed {
                 fnDown = true
@@ -132,7 +138,7 @@ final class GlobeMonitor {
             } else {
                 let quick = CFAbsoluteTimeGetCurrent() - pressedAt < tapLimit
                 if fnDown && !chord && !modifiersHeld() && quick {
-                    InputSources.selectNext()
+                    onTap?()
                 }
                 fnDown = false
                 chord = false

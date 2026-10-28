@@ -41,21 +41,26 @@ enum InputSources {
         return String(name(source).uppercased().prefix(2))
     }
 
-    static func current() -> TISInputSource? {
-        TISCopyCurrentKeyboardInputSource()?.takeRetainedValue()
+    private static let iconLabelsKey: CFString? = {
+        guard let carbon = dlopen("/System/Library/Frameworks/Carbon.framework/Carbon", RTLD_LAZY),
+              let symbol = dlsym(carbon, "kTISPropertyInputSourceIconLabels") else {
+            return nil
+        }
+        return symbol.assumingMemoryBound(to: CFString.self).pointee
+    }()
+
+    static func iconLabel(_ source: TISInputSource) -> String {
+        if let key = iconLabelsKey, let raw = TISGetInputSourceProperty(source, key),
+           let labels = Unmanaged<CFDictionary>.fromOpaque(raw).takeUnretainedValue() as? [String: Any],
+           let primary = labels["Primary"] as? String,
+           !primary.isEmpty, primary.unicodeScalars.allSatisfy({ $0.isASCII }) {
+            return primary
+        }
+        return shortName(source)
     }
 
-    static func selectNext() {
-        let sources = cyclable()
-        guard sources.count >= 2 else { return }
-        var target = 0
-        if let current = current() {
-            let currentID = id(current)
-            if let index = sources.firstIndex(where: { id($0) == currentID }) {
-                target = (index + 1) % sources.count
-            }
-        }
-        TISSelectInputSource(sources[target])
+    static func current() -> TISInputSource? {
+        TISCopyCurrentKeyboardInputSource()?.takeRetainedValue()
     }
 
     static func select(id wanted: String) {

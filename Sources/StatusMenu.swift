@@ -5,11 +5,15 @@ import ServiceManagement
 final class StatusMenu: NSObject, NSMenuDelegate {
     private let monitor: GlobeMonitor
     private let stats: KeyStats
+    private let switcher: LayoutSwitcher
+    private let click: ClickSound
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
-    init(monitor: GlobeMonitor, stats: KeyStats) {
+    init(monitor: GlobeMonitor, stats: KeyStats, switcher: LayoutSwitcher, click: ClickSound) {
         self.monitor = monitor
         self.stats = stats
+        self.switcher = switcher
+        self.click = click
         super.init()
     }
 
@@ -32,29 +36,39 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     }
 
     func refreshTitle() {
+        guard let button = item.button else { return }
+        var image = Badge.image("?")
+        var name = "Keyboard layout"
         if let current = InputSources.current() {
-            item.button?.title = InputSources.shortName(current)
-        } else {
-            item.button?.title = "?"
+            image = Badge.image(for: current)
+            name = InputSources.name(current)
         }
+        button.image = image
+        button.title = ""
+        button.imagePosition = .imageOnly
+        button.setAccessibilityLabel(name)
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         let currentID = InputSources.current().map { InputSources.id($0) }
 
+        menu.addItem(NSMenuItem.sectionHeader(title: "Keyboard Layouts"))
         for source in InputSources.cyclable() {
             let entry = NSMenuItem(title: InputSources.name(source), action: #selector(selectSource(_:)), keyEquivalent: "")
             entry.target = self
             entry.representedObject = InputSources.id(source)
+            entry.image = Badge.image(for: source)
             entry.state = InputSources.id(source) == currentID ? .on : .off
             menu.addItem(entry)
         }
         menu.addItem(.separator())
 
-        menu.addItem(statsItem(prefix: "Today", counts: stats.todayCounts))
-        menu.addItem(statsItem(prefix: "All time", counts: stats.allTimeCounts))
-        menu.addItem(actionItem("Reset Statistics…", #selector(resetStats)))
+        menu.addItem(NSMenuItem.sectionHeader(title: "Characters Typed"))
+        let statsEntry = NSMenuItem()
+        statsEntry.view = StatsView(today: stats.todayCounts, allTime: stats.allTimeCounts)
+        menu.addItem(statsEntry)
+        menu.addItem(actionItem("Reset Statistics…", #selector(resetStats), symbol: "arrow.counterclockwise"))
         menu.addItem(.separator())
 
         if let status = statusItem() {
@@ -62,36 +76,21 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             menu.addItem(.separator())
         }
 
-        let login = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
-        login.target = self
+        let sound = actionItem("Click Sound", #selector(toggleSound), symbol: "speaker.wave.2")
+        sound.state = click.enabled ? .on : .off
+        menu.addItem(sound)
+        let login = actionItem("Open at Login", #selector(toggleLogin), symbol: "power")
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
 
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit MacKbdGlobe", action: #selector(quit), keyEquivalent: "q")
-        quit.target = self
+        let quit = actionItem("Quit MacKbdGlobe", #selector(quit), symbol: "xmark.rectangle")
+        quit.keyEquivalent = "q"
         menu.addItem(quit)
     }
 
-    private func statsItem(prefix: String, counts: [String: Int]) -> NSMenuItem {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        func format(_ number: Int) -> String {
-            formatter.string(from: NSNumber(value: number)) ?? String(number)
-        }
-        let total = counts.values.reduce(0, +)
-        var text = "\(prefix): no typing yet"
-        if total > 0 {
-            let parts = counts
-                .sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
-                .map { "\($0.key) \(format($0.value))" }
-            text = "\(prefix): " + (parts + ["Total \(format(total))"]).joined(separator: " · ")
-        }
-        let entry = NSMenuItem()
-        let font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.menuFont(ofSize: 0).pointSize, weight: .regular)
-        entry.attributedTitle = NSAttributedString(string: text, attributes: [.font: font])
-        entry.isEnabled = false
-        return entry
+    @objc private func toggleSound() {
+        click.enabled.toggle()
     }
 
     @objc private func resetStats() {
@@ -110,23 +109,28 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         if monitor.state == .needsPermission {
             return actionItem(
                 "Allow Input Monitoring…",
-                #selector(openInputMonitoring)
+                #selector(openInputMonitoring),
+                symbol: "lock.shield"
             )
         }
         if fnUsageType() != 0 {
-            return actionItem("Set 🌐 key to “Do Nothing”…", #selector(openKeyboardSettings))
+            return actionItem("Set 🌐 key to “Do Nothing”…", #selector(openKeyboardSettings), symbol: "globe")
         }
         if monitor.state == .running(fnKeyboards: 0) {
             let entry = NSMenuItem(title: "Globe key not found", action: nil, keyEquivalent: "")
+            entry.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: nil)
             entry.isEnabled = false
             return entry
         }
         return nil
     }
 
-    private func actionItem(_ title: String, _ action: Selector) -> NSMenuItem {
+    private func actionItem(_ title: String, _ action: Selector, symbol: String? = nil) -> NSMenuItem {
         let entry = NSMenuItem(title: title, action: action, keyEquivalent: "")
         entry.target = self
+        if let symbol {
+            entry.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        }
         return entry
     }
 
@@ -141,7 +145,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     @objc private func selectSource(_ sender: NSMenuItem) {
         guard let id = sender.representedObject as? String else { return }
-        InputSources.select(id: id)
+        switcher.select(id: id)
     }
 
     @objc private func openInputMonitoring() {

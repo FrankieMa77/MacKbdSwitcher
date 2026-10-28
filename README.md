@@ -14,12 +14,14 @@ On recent macOS versions, pressing the 🌐 Globe key to change the input source
 
 ## What it does
 
-MacKbdSwitcher is a small menu bar app (the app itself is named **MacKbdGlobe**). A short tap on 🌐 switches to the next keyboard layout at once, without the popup.
+MacKbdSwitcher is a small menu bar app (the app itself is named **MacKbdGlobe**). A short tap on 🌐 switches the keyboard layout at once, without the popup.
 
 - Works with the built-in MacBook keyboard and the Magic Keyboard with the 🌐 key.
-- Cycles through the layouts enabled in System Settings, in their listed order.
+- One tap switches to the layout you used before, so tap, tap toggles between your two languages.
+- Quick taps in a row step further through your layouts (third, fourth…). Wherever you stop becomes the new pair with the layout you started from.
 - Leaves 🌐 shortcuts alone. Fn+Delete, Fn+arrows, 🌐+E, combinations with ⌘ ⌥ ⌃ ⇧, and presses longer than 0.5 s do not switch.
-- Shows the current layout in the menu bar (EN, RU, PL…). Click it to pick a layout directly.
+- Shows the current layout in the menu bar as a native-style badge (EN, RU, PL…). Click it to pick a layout directly.
+- A subtle click on every switch. Turn it off with **Click Sound** in the menu.
 - Typing statistics in the menu: characters typed per language today and all time, with totals.
 - Optional Open at Login.
 - No network access, no third-party code.
