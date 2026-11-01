@@ -2,18 +2,20 @@ import AppKit
 import Carbon
 import ServiceManagement
 
-final class StatusMenu: NSObject, NSMenuDelegate {
+final class StatusMenu: NSObject, NSMenuDelegate, NSMenuItemValidation {
     private let monitor: GlobeMonitor
     private let stats: KeyStats
     private let switcher: LayoutSwitcher
     private let click: ClickSound
+    private let autoCorrect: AutoCorrect
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
-    init(monitor: GlobeMonitor, stats: KeyStats, switcher: LayoutSwitcher, click: ClickSound) {
+    init(monitor: GlobeMonitor, stats: KeyStats, switcher: LayoutSwitcher, click: ClickSound, autoCorrect: AutoCorrect) {
         self.monitor = monitor
         self.stats = stats
         self.switcher = switcher
         self.click = click
+        self.autoCorrect = autoCorrect
         super.init()
     }
 
@@ -72,10 +74,32 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(actionItem("Reset Statistics…", #selector(resetStats), symbol: "arrow.counterclockwise"))
         menu.addItem(.separator())
 
+        var hints: [NSMenuItem] = []
         if let status = statusItem() {
-            menu.addItem(status)
+            hints.append(status)
+        }
+        if autoCorrect.needsAccessibility {
+            hints.append(actionItem("Allow Accessibility…", #selector(openAccessibility), symbol: "lock.shield"))
+        }
+        if autoCorrect.lacksSupportedPair {
+            let entry = NSMenuItem(title: "Auto-Correct: no supported layout pair", action: nil, keyEquivalent: "")
+            entry.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: nil)
+            entry.isEnabled = false
+            hints.append(entry)
+        }
+        if !hints.isEmpty {
+            hints.forEach(menu.addItem)
             menu.addItem(.separator())
         }
+
+        let correct = actionItem("Auto-Correct Layout", #selector(toggleAutoCorrect), symbol: "wand.and.stars")
+        correct.state = autoCorrect.enabled ? .on : .off
+        menu.addItem(correct)
+        if let languages = languagesItem() {
+            menu.addItem(languages)
+        }
+        menu.addItem(actionItem("Clear Learned Exceptions…", #selector(clearExceptions), symbol: "eraser"))
+        menu.addItem(.separator())
 
         let sound = actionItem("Click Sound", #selector(toggleSound), symbol: "speaker.wave.2")
         sound.state = click.enabled ? .on : .off
@@ -100,6 +124,58 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         submenu.addItem(panel)
         entry.submenu = submenu
         return entry
+    }
+
+    private func languagesItem() -> NSMenuItem? {
+        let sections = autoCorrect.languageSections()
+        guard !sections.isEmpty else { return nil }
+        let entry = NSMenuItem(title: "Auto-Correct Languages", action: nil, keyEquivalent: "")
+        entry.image = NSImage(systemSymbolName: "character.bubble", accessibilityDescription: nil)
+        let submenu = NSMenu()
+        for section in sections {
+            submenu.addItem(NSMenuItem.sectionHeader(title: section.layoutName))
+            for option in section.options {
+                let language = NSMenuItem(title: option.info.name, action: #selector(toggleLanguage(_:)), keyEquivalent: "")
+                language.target = self
+                language.representedObject = [section.layoutID, option.info.code]
+                language.state = option.enabled ? .on : .off
+                submenu.addItem(language)
+            }
+        }
+        entry.submenu = submenu
+        return entry
+    }
+
+    @objc private func toggleLanguage(_ sender: NSMenuItem) {
+        guard let pair = sender.representedObject as? [String], pair.count == 2 else { return }
+        autoCorrect.toggleLanguage(pair[1], layoutID: pair[0])
+    }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(clearExceptions) {
+            return autoCorrect.exceptionCount > 0
+        }
+        return true
+    }
+
+    @objc private func toggleAutoCorrect() {
+        autoCorrect.enabled.toggle()
+    }
+
+    @objc private func clearExceptions() {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "Clear learned exceptions?"
+        alert.informativeText = "Words you restored with Backspace will be auto-corrected again."
+        alert.addButton(withTitle: "Clear")
+        alert.addButton(withTitle: "Cancel")
+        if alert.runModal() == .alertFirstButtonReturn {
+            autoCorrect.clearExceptions()
+        }
+    }
+
+    @objc private func openAccessibility() {
+        open("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
     }
 
     @objc private func toggleSound() {

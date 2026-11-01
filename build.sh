@@ -14,12 +14,13 @@ rm -rf build
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" dist
 
 swiftc -O -swift-version 5 -target arm64-apple-macos14.0 \
-    Sources/*.swift \
+    Sources/*.swift Sources/Core/*.swift \
     -o "$APP/Contents/MacOS/MacKbdGlobe" \
     -framework Carbon -framework IOKit -framework AppKit -framework ServiceManagement
 
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+cp Resources/ngrams-*.tsv "$APP/Contents/Resources/"
 
 ID="${SIGN_IDENTITY:-}"
 if [ -z "$ID" ]; then

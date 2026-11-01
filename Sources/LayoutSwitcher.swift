@@ -50,6 +50,10 @@ final class LayoutSwitcher {
         return result
     }
 
+    func recentOrder() -> [String] {
+        ordered()
+    }
+
     func tap() {
         let now = CFAbsoluteTimeGetCurrent()
         if inBurst && now - lastTap < 0.4 {

@@ -41,6 +41,14 @@ enum InputSources {
         return String(name(source).uppercased().prefix(2))
     }
 
+    static func languages(_ source: TISInputSource) -> [String] {
+        guard let raw = TISGetInputSourceProperty(source, kTISPropertyInputSourceLanguages),
+              let languages = Unmanaged<CFArray>.fromOpaque(raw).takeUnretainedValue() as? [String] else {
+            return []
+        }
+        return languages
+    }
+
     private static let iconLabelsKey: CFString? = {
         guard let carbon = dlopen("/System/Library/Frameworks/Carbon.framework/Carbon", RTLD_LAZY),
               let symbol = dlsym(carbon, "kTISPropertyInputSourceIconLabels") else {

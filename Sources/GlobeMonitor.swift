@@ -30,6 +30,7 @@ final class GlobeMonitor {
     var onChange: (() -> Void)?
     var onKeystroke: (() -> Void)?
     var onTap: (() -> Void)?
+    var onShiftTap: (() -> Void)?
     var onOtherKey: (() -> Void)?
 
     private let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
@@ -37,6 +38,7 @@ final class GlobeMonitor {
     private var requestedAccess = false
     private var fnDown = false
     private var chord = false
+    private var shiftAtPress = false
     private var pressedAt: CFAbsoluteTime = 0
 
     func start() {
@@ -99,9 +101,9 @@ final class GlobeMonitor {
         onChange?()
     }
 
-    private func modifiersHeld() -> Bool {
-        let flags = CGEventSource.flagsState(.combinedSessionState)
-        return !flags.intersection([.maskCommand, .maskAlternate, .maskControl, .maskShift]).isEmpty
+    private func heldModifiers() -> CGEventFlags {
+        CGEventSource.flagsState(.combinedSessionState)
+            .intersection([.maskCommand, .maskAlternate, .maskControl, .maskShift])
     }
 
     private func isCountable(_ usage: Int) -> Bool {
@@ -134,14 +136,22 @@ final class GlobeMonitor {
             if pressed {
                 fnDown = true
                 pressedAt = CFAbsoluteTimeGetCurrent()
-                chord = modifiersHeld()
+                let held = heldModifiers()
+                shiftAtPress = held == .maskShift
+                chord = !held.isEmpty && !shiftAtPress
             } else {
                 let quick = CFAbsoluteTimeGetCurrent() - pressedAt < tapLimit
-                if fnDown && !chord && !modifiersHeld() && quick {
-                    onTap?()
+                if fnDown && !chord && quick {
+                    let held = heldModifiers()
+                    if shiftAtPress && held == .maskShift {
+                        onShiftTap?()
+                    } else if !shiftAtPress && held.isEmpty {
+                        onTap?()
+                    }
                 }
                 fnDown = false
                 chord = false
+                shiftAtPress = false
             }
             return
         }
