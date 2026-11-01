@@ -1,7 +1,7 @@
 # MacKbdSwitcher
 
 [![Downloads](https://img.shields.io/github/downloads/FrankieMa77/MacKbdSwitcher/total)](https://github.com/FrankieMa77/MacKbdSwitcher/releases)
-[![Version](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkirill-grigorchuk%2FMacKbdSwitcher%2Fmain%2FResources%2FInfo.plist&query=%2F%2Fkey%5B.%3D'CFBundleShortVersionString'%5D%2Ffollowing-sibling%3A%3Astring%5B1%5D&label=version&prefix=v&color=orange)](Resources/Info.plist)
+[![Release](https://img.shields.io/github/v/release/FrankieMa77/MacKbdSwitcher)](https://github.com/FrankieMa77/MacKbdSwitcher/releases/latest)
 ![macOS](https://img.shields.io/badge/macOS-14%2B-blue)
 ![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-arm64-lightgrey)
 ![Swift](https://img.shields.io/badge/Swift-5-orange)
@@ -15,8 +15,6 @@ Instant keyboard layout switching with the 🌐 Globe key on macOS: no popup, no
 - **Backspace right after an auto-correction** restores the original word and teaches the app to leave it alone.
 - **Languages per layout**: English, Polish and Russian; a Latin layout such as Polish Pro can be judged as both English and Polish.
 - Polish ⌥ letters (ą ę ł ż ź ś ć ń ó) are part of the word.
-
-Version 0.5 is available from source only: the published releases end at 0.4.0. See [Build from source](#build-from-source).
 
 ## The problem
 
@@ -73,7 +71,7 @@ How it works: the system's own 🌐 action is set to "Do Nothing", so macOS show
 
 ## Installation
 
-1. Download the latest `MacKbdGlobe-<version>.dmg` from [Releases](https://github.com/FrankieMa77/MacKbdSwitcher/releases/latest) (up to 0.4.0, without Auto-Correct), or [build 0.5 from source](#build-from-source).
+1. Download the latest `MacKbdGlobe-<version>.dmg` from [Releases](https://github.com/FrankieMa77/MacKbdSwitcher/releases/latest).
 2. Open the dmg and drag **MacKbdGlobe** to **Applications**.
 3. Open MacKbdGlobe from Applications. The app is not notarized by Apple, so macOS blocks the first launch: go to **System Settings → Privacy & Security** and click **Open Anyway** next to MacKbdGlobe.
 4. Allow keyboard access: **System Settings → Privacy & Security → Input Monitoring** → turn on **MacKbdGlobe**. Choose **Quit & Reopen** if macOS asks.
